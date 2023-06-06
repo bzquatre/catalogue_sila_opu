@@ -40,7 +40,7 @@ Build the project:
 python setup.py
 ```
 ## Installation File
-Click [here]() to download the installation file.
+Click [here](https://drive.google.com/drive/folders/19DTYbz4Y2SDBfA4JxgWb21vnpiljheMO?usp=sharing) to download the installation file.
 
 
 
