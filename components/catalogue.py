@@ -1,105 +1,104 @@
 from PyQt5.QtWidgets import QWidget,QVBoxLayout,QHBoxLayout,QFrame
 from components.Entry import Combobox, Entry
-from components.table import Table
+from components.table import Table,Pagination
 from components.Button import Button,FButton
 from components.header import Header
-from config import Livre,Disciplins,session
-from components.Label import Label
-
-class Frame(QFrame):
+from config import Book,Categories,session
+from components.bookwidget import BookWidget
+class Buttons(QFrame):
     def __init__(self) :
         super().__init__()
-        self.button1, self.button2, self.button3, self.button4=FButton(self,'Sciences Exactes, de la Terre et de la Nature'),FButton(self,'Technologie'),FButton(self,'Sciences Médicales'),FButton(self,'Sciences Sociales')
-        self.setLayout()
-    def setLayout(self):
-        a0,h1,h2=QVBoxLayout(),QHBoxLayout(),QHBoxLayout()
-        h1.addWidget(self.button1),h1.addWidget(self.button2)
-        h2.addWidget(self.button3),h2.addWidget(self.button4)
-        a0.addLayout(h1),a0.addLayout(h2)
-        return super().setLayout(a0)
-
+        self.buttons=[]
+        self.vlayout=QHBoxLayout()
+        self.setLayout(self.vlayout)
+    def addItem(self,text):
+        self.buttons.append(FButton(self,text))
+        self.vlayout.addWidget(self.buttons[-1])
 class Catalogue(QWidget):
     def __init__(self,parent):
         super().__init__(parent=parent)
-        self.desplin,self.text_serche,self.table,self.button,self.reture=Combobox(self),Entry(self),Table(),Button(self,text='Rechercher'),Button(self,text='<')
-        self.text_serche.setPlaceholderText('Rechercher par titre,auteur et  edition')
-        self.text_serche.setFixedWidth(500)
+        self.page=0
+        self.category,self.text_research,self.table,self.button,self.reture=Combobox(self),Entry(self),Table(),Button(self,text='Research'),Button(self,text='<')
+        self.text_research.setPlaceholderText('Research')
+        self.text_research.setFixedWidth(500)
         self.header=Header()
-        self.frame=Frame()
+        self.frame=Buttons()
         self.v=QVBoxLayout()
-        self.table.init_header(["Edition","Titre","Auteur","Discipline","Prix"])
-        self.desplin.addItems(['Toutes les Disciplines']+[dis.desgination_disciplin for dis in session.query(Disciplins).all()])
+        self.pagination=Pagination(self)
+        self.table.init_header(4)
+        self.category.addItem('ALL Category')
+        for item in [dis.description for dis in session.query(Categories).all()]:
+            self.category.addItem(item)
+            self.frame.addItem(item)
         self.setLayout()
-        self.text_serche.returnPressed.connect(self.remplire)
-        self.button.clicked.connect(self.remplire)
-        self.desplin.currentTextChanged.connect(self.remplire)     
-        self.frame.button1.clicked.connect(self.click1)   
-        self.frame.button2.clicked.connect(self.click2)   
-        self.frame.button3.clicked.connect(self.click3)   
-        self.frame.button4.clicked.connect(self.click4)   
-        self.reture.clicked.connect(self.returee)
-        self.liste_article()
+        self.text_research.returnPressed.connect(self.showData)
+        self.button.clicked.connect(self.showData)
+        self.category.currentTextChanged.connect(self.showData) 
+        for item in self.frame.buttons:    
+            item.clicked.connect(self.buttonClicked)   
+        self.pagination.btn_next.clicked.connect(self.next)
+        self.pagination.btn_prev.clicked.connect(self.prev)
+        self.reture.clicked.connect(self.back)
+        self.data=session.query(Book,Categories).join(Categories,Book.category==Categories.code).all()
+        self.text_research.set_autocomplite([livre[0].title for livre in self.data])
+        self.showData()
         self.etat1()
-    def liste_article(self):
-        self.livres=session.query(Livre,Disciplins).join(Disciplins,Livre.disciplin==Disciplins.code_disciplin).all()
-        self.text_serche.set_autocomplite([livre[0].titre_article for livre in self.livres])
-        self.remplire()
-    def returee(self):
-        self.text_serche.setText('')
-        self.etat1()
-        self.text_serche.setText('')
-    def click1(self):
-        self.desplin.setCurrentIndex(2)
-        self.etat2()
-        self.text_serche.setText('')
-    def click2(self):
-        self.desplin.setCurrentIndex(3)
-        self.etat2()
-        self.text_serche.setText('')
-    def click3(self):
-        self.desplin.setCurrentIndex(4)
-        self.etat2()
-        self.text_serche.setText('')
-    def click4(self):
-        self.desplin.setCurrentIndex(5)
-        self.etat2()
-        self.text_serche.setText('')
-    def remplire(self):
+    def getNmbrPage(self):
+        try:
+            return int(len(self.data)/20) if len(self.data)%20==0 else int(len(self.data)/20)+1
+        except:
+            return 0
+    def next(self):
+        if self.page+1 < self.getNmbrPage():
+            self.page=self.page+1
+            self.pagination.pagelabel.setText(f"{self.page+1} of {self.getNmbrPage()}")
+            self.showData()
+    def prev(self):
+        if self.page-1 >=0 :
+            self.page=self.page-1
+            self.pagination.pagelabel.setText(f"{self.page+1} of {self.getNmbrPage()}")
+            self.showData()
+    def getData(self):
+        self.data = session.query(Book, Categories)\
+            .join(Categories, Book.category == Categories.code)\
+            .filter(Categories.description == self.category.currentText(), Book.title.like(f"%{self.text_research.text()}%"))\
+            .all() if self.category.currentText()!='ALL Category' else session.query(Book, Categories)\
+            .join(Categories, Book.category == Categories.code)\
+            .filter(Book.title.like(f"%{self.text_research.text()}%"))\
+            .all()
+    def showData(self):
         self.table.clear()
-        self.table.init_header(["Edition","Titre","Auteur","Discipline","Prix"])
-        if self.text_serche.text()=="" and self.desplin.currentText()=="Toutes les Disciplines":
-            for article in  self.livres:
+        self.table.init_header(4)
+        self.getData()
+        self.pagination.pagelabel.setText(f"{self.page+1} of {self.getNmbrPage()}")
+        for j,article in  enumerate(self.data[self.page*20:self.page*20+20]):
+            if j%4==0:
                 self.table.setRowCount(self.table.rowCount()+1)
-                [self.table.setCellWidget(self.table.rowCount()-1,i,Label(str(item))) for i,item in enumerate([article[0].edition_article,article[0].titre_article,article[0].auteur_article,article[1].desgination_disciplin,article[0].prix_ttc])]
-        elif self.text_serche.text()=="" and self.desplin.currentText()!="Toutes les Disciplines":
-            for article in  self.livres:
-                if self.desplin.currentText()== article[1].desgination_disciplin:
-                        self.table.setRowCount(self.table.rowCount()+1)
-                        [self.table.setCellWidget(self.table.rowCount()-1,i,Label(str(item))) for i,item in enumerate([article[0].edition_article,article[0].titre_article,article[0].auteur_article,article[1].desgination_disciplin,article[0].prix_ttc])]
-        else:
-            for article in  self.livres:
-                if  (self.text_serche.text()=="" or self.text_serche.text().lower() in str(article[0].titre_article).lower() or self.text_serche.text() == str(article[0].edition_article)):
-                    self.table.setRowCount(self.table.rowCount()+1)
-                    [self.table.setCellWidget(self.table.rowCount()-1,i,Label(str(item))) for i,item in enumerate([article[0].edition_article,article[0].titre_article,article[0].auteur_article,article[1].desgination_disciplin,article[0].prix_ttc])]
-        
+            self.table.setCellWidget(self.table.rowCount()-1,j%4,BookWidget(title=article[0].title, authors=article[0].authors, cover_path=article[0].cover, price=article[0].price))
+    def back(self):
+        self.text_research.setText('')
+        self.etat1()
+        self.text_research.setText('')
+    def buttonClicked(self):
+        button = self.sender()  # Get the reference to the clicked button
+        self.category.setCurrentText(button.text())
+        self.etat2()
+        self.text_research.setText('')
     def etat2(self):
         self.frame.hide()
-        self.text_serche.show(),self.button.show(),self.desplin.show(),self.table.show(),self.reture.show()
+        [i.show() for i in [self.text_research,self.button,self.category,self.table,self.reture,self.pagination]]
     def etat1(self):
         self.frame.show()
-        self.text_serche.hide(),self.button.hide(),self.desplin.hide(),self.table.hide(),self.reture.hide()
+        [i.hide() for i in [self.text_research,self.button,self.category,self.table,self.reture,self.pagination]]
     def setLayout(self):
         h=QHBoxLayout()
-        h.addStretch(1),h.addWidget(self.reture),h.addWidget(self.text_serche),h.addWidget(self.button),h.addStretch(1)
+        h.addStretch(1),h.addWidget(self.reture),h.addWidget(self.text_research),h.addWidget(self.button),h.addStretch(1)
         self.v.setContentsMargins(0,0,0,0)
         self.v.setSpacing(0)
         self.v.addWidget(self.header)
         self.v.addLayout(h)
-        self.v.addWidget(self.desplin)
+        self.v.addWidget(self.category)
+        self.v.addWidget(self.pagination)
         self.v.addWidget(self.table)
         self.v.addWidget(self.frame)
         return super().setLayout(self.v)
-    
-    
-    
-    

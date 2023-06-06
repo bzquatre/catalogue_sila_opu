@@ -7,19 +7,20 @@ engine = create_engine('sqlite:///database.db')
 factory = sessionmaker(bind=engine)
 session = factory()
 Base=declarative_base()
-class Disciplins(Base):
-     __tablename__="disciplins"
-     code_disciplin =Column(Integer,primary_key=True)
-     desgination_disciplin=Column(String(50))
-class Livre(Base):
-    __tablename__="livre"
-    code_livre=Column(Integer,autoincrement=True,primary_key=True)
-    isbn_article =Column(Numeric(13))
-    edition_article =Column(Integer)
-    titre_article =Column(String(300))
-    auteur_article =Column(String(300))
-    disciplin =Column(Integer,ForeignKey("disciplins.code_disciplin"))
-    prix_ttc =Column(String(30))
+class Categories(Base):
+     __tablename__="categories"
+     code =Column(Integer,primary_key=True)
+     description=Column(String(50))
+class Book(Base):
+    __tablename__="book"
+    code=Column(Integer,autoincrement=True,primary_key=True)
+    isbn =Column(Numeric(13))
+    edition =Column(Integer)
+    title =Column(String(300))
+    authors =Column(String(300))
+    category =Column(Integer,ForeignKey("categories.code"))
+    price =Column(String(30))
+    cover= Column(String(255), default='cover/'+edition+'.jpg')
 if __name__=="__main__":                                                                         
     Base.metadata.create_all(engine)
     

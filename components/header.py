@@ -32,7 +32,6 @@ class Header(QFrame):
         self.timer.start(20)
         self.timer.timeout.connect(self.move_label)
     def move_label(self):
-        print()
         self.p=self.p-5 if self.p>-self.title.width() else self.width()
         self.title.move(self.p,20)
         self.timer.start(20)

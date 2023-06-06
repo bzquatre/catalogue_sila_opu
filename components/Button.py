@@ -13,8 +13,8 @@ class FButton(QPushButton):
             background-color:rgba(15,157,88,0.8);
             border:0px solid blue;
             border-radius: 12px;
-            margin: 10px ;
-            padding: 10px 20px 10px 20px;
+            margin: 5px ;
+            padding: 5px 10px 5px 10px;
             }
         QPushButton:hover {
             background-color:rgba(15,157,88,1);

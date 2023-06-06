@@ -32,7 +32,7 @@ class Combobox(QComboBox):
         try:
             self.addItems(liste)
         except Exception as e :
-             print(e)
+            pass
         self.setStyleSheet("""
         QComboBox{
          font:24px;

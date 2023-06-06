@@ -7,9 +7,13 @@ header='--add-data=header.txt;.' if os.name=='nt' else'--add-data=header.txt:.'
 PyInstaller.__main__.run(
     [
         'main.py',
+        '--name=OPU Catalog',
         '--windowed',
         '--onedir',
         '--icon=Icon.ico',
-        database,icon,header,images
+        database,
+        icon,
+        header,
+        images
     ]
 )
